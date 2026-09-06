@@ -17,9 +17,19 @@ const IMGBB_API_KEY = "6f8d70df95ecc0b63730d3650f0fc7e1";
 const CODE_ACCES_CHINE = "240457";
 
 const categories = [
-  "Chaussures", "Vêtements", "Téléphones", "Informatique", "Électronique",
-  "Électroménager", "Mobilier", "Décoration", "Restauration", "Véhicules",
-  "Motos & Vélos", "Beauté et bien-être", "Autre",
+  { nom: "Chaussures", slug: "chaussures" },
+  { nom: "Vêtements", slug: "vetements" },
+  { nom: "Téléphones", slug: "telephones" },
+  { nom: "Informatique", slug: "informatique" },
+  { nom: "Électronique", slug: "electronique" },
+  { nom: "Électroménager", slug: "electromenager" },
+  { nom: "Mobilier", slug: "mobilier" },
+  { nom: "Décoration", slug: "decoration" },
+  { nom: "Restauration", slug: "restauration" },
+  { nom: "Véhicules", slug: "vehicules" },
+  { nom: "Motos & Vélos", slug: "motos-velos" },
+  { nom: "Beauté et bien-être", slug: "beaute-bien-etre" },
+  { nom: "Autre", slug: "autre" },
 ];
 
 const pays = ["Burkina Faso", "Côte d'Ivoire", "Togo", "Bénin", "Mali", "Niger", "Chine"];
@@ -37,32 +47,32 @@ const couleursDisponibles = [
 ];
 
 const categoryAttributes: Record<string, ProductAttribute[]> = {
-  "Chaussures": [
+  "chaussures": [
     { key: "pointure", label: "Pointures disponibles", type: "multiselect", options: ["36","37","38","39","40","41","42","43","44","45","46"] },
     { key: "couleur", label: "Couleurs disponibles", type: "multiselect", options: couleursDisponibles },
   ],
-  "Vêtements": [
+  "vetements": [
     { key: "taille", label: "Tailles disponibles", type: "multiselect", options: ["XS","S","M","L","XL","XXL"] },
     { key: "couleur", label: "Couleurs disponibles", type: "multiselect", options: couleursDisponibles },
   ],
-  "Téléphones": [
+  "telephones": [
     { key: "couleur", label: "Couleurs disponibles", type: "multiselect", options: couleursDisponibles },
   ],
-  "Électroménager": [
+  "electromenager": [
     { key: "couleur", label: "Couleurs disponibles", type: "multiselect", options: couleursDisponibles },
   ],
-  "Mobilier": [
+  "mobilier": [
     { key: "couleur", label: "Couleurs disponibles", type: "multiselect", options: couleursDisponibles },
     { key: "materiau", label: "Matériau", type: "text" },
   ],
-  "Décoration": [
+  "decoration": [
     { key: "couleur", label: "Couleurs disponibles", type: "multiselect", options: couleursDisponibles },
   ],
-  "Véhicules": [
+  "vehicules": [
     { key: "annee", label: "Année", type: "text" },
     { key: "kilometrage", label: "Kilométrage (km)", type: "text" },
   ],
-  "Motos & Vélos": [
+  "motos-velos": [
     { key: "annee", label: "Année", type: "text" },
     { key: "kilometrage", label: "Kilométrage (km)", type: "text" },
   ],
@@ -330,7 +340,7 @@ export default function PublierProduitPage() {
         >
           <option value="">Choisir une catégorie</option>
           {categories.map((c) => (
-            <option key={c} value={c}>{c}</option>
+            <option key={c.slug} value={c.slug}>{c.nom}</option>
           ))}
         </select>
 
