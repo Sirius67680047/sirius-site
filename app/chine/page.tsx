@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 
 type Produit = {
@@ -22,8 +22,7 @@ export default function ChinePage() {
       try {
         const q = query(
           collection(db, "products"),
-          where("country", "==", "Chine"),
-          orderBy("createdAt", "desc")
+          where("country", "==", "Chine")
         );
         const snap = await getDocs(q);
         setProduits(

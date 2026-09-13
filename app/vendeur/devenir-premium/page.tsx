@@ -2,46 +2,29 @@
 
 import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, onSnapshot, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../../../lib/firebase";
 
-const IMGBB_API_KEY = "6f8d70df95ecc0b63730d3650f0fc7e1";
-const PRODUIT_DEVENIR_CHAUFFEUR = "prd_uixhg2od";
+const LIEN_PAIEMENT_PREMIUM = "https://cltmgung.mychariow.shop/prd_t55gvtma";
+const PAYS_LISTE = ["Burkina Faso", "Côte d'Ivoire", "Togo", "Bénin", "Mali", "Niger", "Chine"];
 
-async function uploadImageToImgBB(file: File): Promise<string> {
-  const formData = new FormData();
-  formData.append("image", file);
-  const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-    method: "POST",
-    body: formData,
-  });
-  const data = await res.json();
-  if (!data?.data?.url) throw new Error("Échec upload image");
-  return data.data.url;
-}
-
-export default function DevenirChauffeurPage() {
+export default function DevenirPremiumPage() {
   const [uid, setUid] = useState<string | null>(null);
-  const [email, setEmail] = useState<string | null>(null);
   const [chargementAuth, setChargementAuth] = useState(true);
-  const [statut, setStatut] = useState<string | null>(null);
+  const [estPremium, setEstPremium] = useState(false);
   const [chargementStatut, setChargementStatut] = useState(true);
-  const [vehicleImageUrl, setVehicleImageUrl] = useState<string | null>(null);
-  const [descriptionActuelle, setDescriptionActuelle] = useState("");
 
+  const [nom, setNom] = useState("");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [snapchat, setSnapchat] = useState("");
-  const [ville, setVille] = useState("");
-  const [description, setDescription] = useState("");
-  const [image, setImage] = useState<File | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [pays, setPays] = useState("Burkina Faso");
   const [erreur, setErreur] = useState("");
-  const [messageOk, setMessageOk] = useState("");
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
       setUid(u ? u.uid : null);
-      setEmail(u ? u.email : null);
+      setEmail(u?.email ?? "");
+      setNom(u?.displayName ?? "");
       setChargementAuth(false);
     });
     return () => unsub();
@@ -52,124 +35,29 @@ export default function DevenirChauffeurPage() {
       setChargementStatut(false);
       return;
     }
-    const unsub = onSnapshot(doc(db, "drivers", uid), (snap) => {
-      if (snap.exists()) {
-        const data = snap.data();
-        setStatut(data.status ?? null);
-        setPhone((prev) => prev || data.phone || "");
-        setVehicleImageUrl(data.vehicleImageUrl ?? null);
-        setDescriptionActuelle(data.description ?? "");
-      } else {
-        setStatut(null);
-      }
+    const unsub = onSnapshot(doc(db, "users", uid), (snap) => {
+      setEstPremium(snap.exists() && snap.data().isPremium === true);
       setChargementStatut(false);
     });
     return () => unsub();
   }, [uid]);
 
-  async function demarrerPaiement(telephonePourPaiement: string) {
-    if (!uid || !email) {
+  function handlePayer() {
+    setErreur("");
+    if (!uid) {
       setErreur("Vous devez être connecté (Espace Vendeur).");
       return;
     }
-    setErreur("");
-    setIsLoading(true);
-    try {
-      const res = await fetch("/api/chariow", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          productId: PRODUIT_DEVENIR_CHAUFFEUR,
-          email,
-          telephone: telephonePourPaiement,
-          type: "chauffeur",
-          uid,
-        }),
-      });
-      const data = await res.json();
-
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
-      } else {
-        setErreur(data.error || "Erreur lors de la création du paiement.");
-      }
-    } catch (e: any) {
-      setErreur(e.message || "Une erreur est survenue.");
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  async function handleConfirmer(e: React.FormEvent) {
-    e.preventDefault();
-    setErreur("");
-
-    if (!uid || !email) {
-      setErreur("Vous devez être connecté (Espace Vendeur).");
-      return;
-    }
-    if (!image || !phone.trim() || !ville.trim()) {
-      setErreur("Ajoutez une photo, un numéro de téléphone et une ville.");
+    if (!nom.trim() || !email.trim() || !phone.trim()) {
+      setErreur("Remplissez votre nom, email et téléphone.");
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const imageUrl = await uploadImageToImgBB(image);
-
-      await setDoc(
-        doc(db, "drivers", uid),
-        {
-          phone: phone.trim(),
-          snapchat: snapchat.trim(),
-          city: ville.trim(),
-          description: description.trim(),
-          vehicleImageUrl: imageUrl,
-          email,
-          status: "pending",
-          requestedAt: serverTimestamp(),
-        },
-        { merge: true }
-      );
-
-      setIsLoading(false);
-      await demarrerPaiement(phone.trim());
-    } catch (e: any) {
-      setIsLoading(false);
-      setErreur(e.message || "Une erreur est survenue.");
-    }
-  }
-
-  async function handlePublierAnnonce(e: React.FormEvent) {
-    e.preventDefault();
-    setErreur("");
-    setMessageOk("");
-    if (!uid) return;
-
-    setIsLoading(true);
-    try {
-      let urlFinale = vehicleImageUrl ?? "";
-      if (image) {
-        urlFinale = await uploadImageToImgBB(image);
-      }
-
-      await updateDoc(doc(db, "drivers", uid), {
-        vehicleImageUrl: urlFinale,
-        description: descriptionActuelle.trim(),
-        updatedAt: serverTimestamp(),
-      });
-
-      setMessageOk("Annonce mise à jour ✅");
-      setImage(null);
-    } catch (e: any) {
-      setErreur(e.message || "Erreur lors de la mise à jour.");
-    } finally {
-      setIsLoading(false);
-    }
+    window.location.href = LIEN_PAIEMENT_PREMIUM;
   }
 
   if (chargementAuth || chargementStatut) {
-    return <div className="min-h-screen bg-[#F8F6F2] pb-40" />;
+    return <div className="min-h-screen bg-black/40 pb-40" />;
   }
 
   if (!uid) {
@@ -180,139 +68,54 @@ export default function DevenirChauffeurPage() {
     );
   }
 
-  // Chauffeur actif : écran de publication/mise à jour d'annonce
-  if (statut === "active") {
-    return (
-      <div className="min-h-screen bg-[#F8F6F2] pb-40 px-4 pt-6">
-        <h1 className="text-lg font-bold text-[#17161A] mb-4">Mon annonce chauffeur</h1>
-
-        <div className="max-w-md mx-auto space-y-4">
-          <div className="bg-green-50 rounded-xl p-3 flex items-center gap-2 text-green-700 text-sm">
-            ✅ Vous êtes chauffeur actif — vous pouvez mettre à jour votre annonce.
-          </div>
-
-          <form onSubmit={handlePublierAnnonce} className="bg-white rounded-2xl border border-[#EEE8DD] p-5 space-y-4">
-            <label className="w-full h-44 border border-dashed border-[#CBCBCB] rounded-xl flex items-center justify-center cursor-pointer overflow-hidden text-gray-400">
-              {image ? (
-                <img src={URL.createObjectURL(image)} alt="" className="w-full h-full object-cover" />
-              ) : vehicleImageUrl ? (
-                <img src={vehicleImageUrl} alt="" className="w-full h-full object-cover" />
-              ) : (
-                "+ Photo du véhicule"
-              )}
-              <input
-                type="file"
-                accept="image/*"
-                hidden
-                onChange={(e) => e.target.files?.[0] && setImage(e.target.files[0])}
-              />
-            </label>
-            <p className="text-xs text-gray-400 text-center -mt-2">
-              Touchez pour changer la photo (une seule photo publiée)
-            </p>
-
-            <textarea
-              placeholder="Description (véhicule, disponibilités...)"
-              value={descriptionActuelle}
-              onChange={(e) => setDescriptionActuelle(e.target.value)}
-              rows={4}
-              className="w-full border border-[#EEE8DD] rounded-xl px-4 py-3 outline-none focus:border-[#FF6E14]"
-            />
-
-            {erreur && <p className="text-red-500 text-xs">{erreur}</p>}
-            {messageOk && <p className="text-green-600 text-xs">{messageOk}</p>}
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-emerald-600 text-white font-semibold py-3 rounded-full disabled:opacity-60"
-            >
-              {isLoading ? "Publication..." : "PUBLIER"}
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
-  if (statut === "pending") {
+  if (estPremium) {
     return (
       <div className="min-h-screen bg-[#F8F6F2] pb-40 px-4 pt-8">
-        <div className="max-w-md mx-auto bg-white rounded-2xl border border-[#EEE8DD] p-6 text-center space-y-4">
-          <p className="text-orange-600 font-semibold">
-            ⏳ Votre demande est enregistrée. Terminez le paiement pour l&apos;activer.
-          </p>
-          <button
-            onClick={() => demarrerPaiement(phone.trim() || "00000000")}
-            disabled={isLoading}
-            className="w-full bg-[#FF6E14] text-white font-semibold py-3 rounded-full disabled:opacity-60"
-          >
-            {isLoading ? "Redirection..." : "Terminer le paiement"}
-          </button>
-          {erreur && <p className="text-red-500 text-xs">{erreur}</p>}
+        <div className="max-w-md mx-auto bg-white rounded-2xl border border-[#EEE8DD] p-6 text-center">
+          <p className="text-amber-600 font-semibold">⭐ Vous êtes déjà vendeur premium.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F6F2] pb-40 px-4 pt-6">
-      <h1 className="text-lg font-bold text-[#17161A] mb-4">Devenir chauffeur</h1>
+    <div className="min-h-screen bg-black/40 flex items-start justify-center px-4 pt-10 pb-40">
+      <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4">
+        <h1 className="text-2xl font-bold text-[#17161A]">Devenir Vendeur Premium</h1>
+        <p className="text-[#17161A]/80">
+          Le mode Premium fait la promotion de TOUS vos produits publiés :
+        </p>
+        <ul className="space-y-2 text-[#17161A]/90">
+          <li className="flex gap-2">✅ <span>Badge Premium visible par les clients</span></li>
+          <li className="flex gap-2">✅ <span>Vos produits apparaissent en priorité dans les recherches</span></li>
+          <li className="flex gap-2">✅ <span>Mise en avant sur les réseaux Sirius E-commerce</span></li>
+          <li className="flex gap-2">✅ <span>Notifications hebdomadaires envoyées à tous les utilisateurs</span></li>
+        </ul>
+        <p className="text-[#17161A]/80">
+          Prix : 2000 FCFA / mois. Renseignez vos informations puis payez en ligne.
+        </p>
 
-      <form onSubmit={handleConfirmer} className="max-w-md mx-auto bg-white rounded-2xl border border-[#EEE8DD] p-5 space-y-4">
-        <label className="w-full h-40 border border-dashed border-[#CBCBCB] rounded-xl flex items-center justify-center cursor-pointer overflow-hidden text-gray-400">
-          {image ? (
-            <img src={URL.createObjectURL(image)} alt="" className="w-full h-full object-cover" />
-          ) : (
-            "+ Photo du véhicule"
-          )}
-          <input
-            type="file"
-            accept="image/*"
-            hidden
-            onChange={(e) => e.target.files?.[0] && setImage(e.target.files[0])}
-          />
-        </label>
-
-        <input
-          type="tel"
-          placeholder="Numéro de téléphone"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          className="w-full border border-[#EEE8DD] rounded-xl px-4 py-3 outline-none focus:border-[#FF6E14]"
-        />
-        <input
-          type="text"
-          placeholder="Snapchat (optionnel)"
-          value={snapchat}
-          onChange={(e) => setSnapchat(e.target.value)}
-          className="w-full border border-[#EEE8DD] rounded-xl px-4 py-3 outline-none focus:border-[#FF6E14]"
-        />
-        <input
-          type="text"
-          placeholder="Ville / zone de circulation"
-          value={ville}
-          onChange={(e) => setVille(e.target.value)}
-          className="w-full border border-[#EEE8DD] rounded-xl px-4 py-3 outline-none focus:border-[#FF6E14]"
-        />
-        <textarea
-          placeholder="Description (véhicule, disponibilités...)"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={3}
-          className="w-full border border-[#EEE8DD] rounded-xl px-4 py-3 outline-none focus:border-[#FF6E14]"
-        />
+        <input type="text" placeholder="Votre nom" value={nom} onChange={(e) => setNom(e.target.value)}
+          className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:border-[#FF6E14]" />
+        <input type="email" placeholder="Votre email" value={email} onChange={(e) => setEmail(e.target.value)}
+          className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:border-[#FF6E14]" />
+        <input type="tel" placeholder="Votre téléphone" value={phone} onChange={(e) => setPhone(e.target.value)}
+          className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:border-[#FF6E14]" />
+        <select value={pays} onChange={(e) => setPays(e.target.value)}
+          className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:border-[#FF6E14]">
+          {PAYS_LISTE.map((p) => (<option key={p} value={p}>{p}</option>))}
+        </select>
 
         {erreur && <p className="text-red-500 text-xs">{erreur}</p>}
 
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full bg-[#FF6E14] text-white font-semibold py-3 rounded-full disabled:opacity-60"
-        >
-          {isLoading ? "Envoi en cours..." : "CONFIRMER ET PAYER"}
-        </button>
-      </form>
+        <div className="flex items-center justify-between pt-2">
+          <a href="/vendeur" className="text-[#5A3FD6] font-semibold">Annuler</a>
+          <button onClick={handlePayer}
+            className="bg-[#FFB800] text-black font-bold px-6 py-3 rounded-full">
+            Payer en ligne
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
