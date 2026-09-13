@@ -5,7 +5,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../../../lib/firebase";
 
-const LIEN_PAIEMENT_PREMIUM = "https://cltmgung.mychariow.shop/prd_t55gvtma";
+const LIEN_PAIEMENT_PREMIUM = "https://cltmgung.mychariow.shop/prd_dtk2syep";
 const PAYS_LISTE = ["Burkina Faso", "Côte d'Ivoire", "Togo", "Bénin", "Mali", "Niger", "Chine"];
 
 export default function DevenirPremiumPage() {
