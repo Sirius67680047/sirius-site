@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Sirius E-commerce",
   description: "Application e-commerce Sirius",
+  verification: {
+    google: "Q8qei1kXI9DMnxZWeHzE5nOij58ee3ylHub-j4yqthk",
+  },
 };
 
 export default function RootLayout({
