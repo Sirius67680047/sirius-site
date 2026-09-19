@@ -83,6 +83,7 @@ export default function Home() {
   const [produits, setProduits] = useState<Produit[]>([]);
   const [paysUtilisateur, setPaysUtilisateur] = useState<string | null>(null);
   const [afficherChoixPays, setAfficherChoixPays] = useState(false);
+  const [recherche, setRecherche] = useState("");
 
   useEffect(() => {
     const stocke = localStorage.getItem("sirius_pays_utilisateur");
@@ -124,6 +125,11 @@ export default function Home() {
   const produitsInternationaux = paysUtilisateur
     ? produits.filter((p) => p.country && p.country !== paysUtilisateur)
     : [];
+
+  const rechercheNormalisee = recherche.trim().toLowerCase();
+  const produitsFiltres = rechercheNormalisee
+    ? produits.filter((p) => p.name?.toLowerCase().includes(rechercheNormalisee))
+    : produits;
 
   return (
     <div className="min-h-screen bg-[#F8F6F2] pb-20">
@@ -169,6 +175,8 @@ export default function Home() {
       <div className="px-4 py-4">
         <input
           type="text"
+          value={recherche}
+          onChange={(e) => setRecherche(e.target.value)}
           placeholder="Rechercher un produit..."
           className="w-full border border-[#EEE8DD] bg-white rounded-2xl px-5 py-3 outline-none focus:border-[#FF6E14] shadow-sm"
         />
@@ -200,81 +208,91 @@ export default function Home() {
       </Link>
 
       {/* Catégories */}
-      <div className="pb-6">
-        <div className="flex items-center justify-between px-4 mb-3">
-          <h2 className="text-lg font-bold text-[#17161A]">Catégories</h2>
-          <span className="text-[#FF6E14] text-sm font-semibold">Tout voir</span>
-        </div>
-        <div className="flex gap-4 overflow-x-auto px-4 pb-2">
-          {categories.map((cat) => (
-            <Link
-              key={cat.slug}
-              href={`/categorie/${cat.slug}`}
-              className="flex flex-col items-center gap-2 flex-shrink-0 w-16"
-            >
-              <div className="bg-[#0B0B10] w-14 h-14 rounded-2xl flex items-center justify-center overflow-hidden relative">
-                <div className="relative w-7 h-7">
-                  <Image src={cat.icone} alt={cat.nom} fill className="object-contain" />
-                </div>
-              </div>
-              <span className="text-xs font-medium text-center text-[#17161A]">{cat.nom}</span>
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* Produits internationaux (dynamique, basé sur le pays choisi) */}
-      <div className="pb-6">
-        <div className="flex items-center gap-2 px-4 mb-3">
-          <span>🌍</span>
-          <h2 className="text-lg font-bold text-[#17161A]">Produits internationaux</h2>
-        </div>
-        {produitsInternationaux.length === 0 ? (
-          <p className="text-sm text-[#17161A]/50 px-4">
-            Aucun produit international pour le moment.
-          </p>
-        ) : (
+      {!rechercheNormalisee && (
+        <div className="pb-6">
+          <div className="flex items-center justify-between px-4 mb-3">
+            <h2 className="text-lg font-bold text-[#17161A]">Catégories</h2>
+            <span className="text-[#FF6E14] text-sm font-semibold">Tout voir</span>
+          </div>
           <div className="flex gap-4 overflow-x-auto px-4 pb-2">
-            {produitsInternationaux.map((p) => (
+            {categories.map((cat) => (
               <Link
-                key={p.id}
-                href={`/produit/${p.id}`}
-                className="flex-shrink-0 w-36 border border-[#EEE8DD] rounded-2xl overflow-hidden bg-white block"
+                key={cat.slug}
+                href={`/categorie/${cat.slug}`}
+                className="flex flex-col items-center gap-2 flex-shrink-0 w-16"
               >
-                <div className="bg-[#EEE8DD] h-24 flex items-center justify-center relative">
-                  {p.images?.[0] && (
-                    <Image src={p.images[0]} alt={p.name} fill className="object-cover" />
-                  )}
+                <div className="bg-[#0B0B10] w-14 h-14 rounded-2xl flex items-center justify-center overflow-hidden relative">
+                  <div className="relative w-7 h-7">
+                    <Image src={cat.icone} alt={cat.nom} fill className="object-contain" />
+                  </div>
                 </div>
-                <div className="p-2">
-                  <p className="text-xs font-semibold truncate">{p.name}</p>
-                  <p className="text-[#FF6E14] text-sm font-bold">{p.price.toLocaleString("fr-FR")} FCFA</p>
-                  <span className="inline-block mt-1 bg-[#0E6B57]/10 text-[#0E6B57] text-[10px] font-bold px-2 py-0.5 rounded-full">
-                    📍 {p.country}
-                  </span>
-                </div>
+                <span className="text-xs font-medium text-center text-[#17161A]">{cat.nom}</span>
               </Link>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Produits internationaux (dynamique, basé sur le pays choisi) */}
+      {!rechercheNormalisee && (
+        <div className="pb-6">
+          <div className="flex items-center gap-2 px-4 mb-3">
+            <span>🌍</span>
+            <h2 className="text-lg font-bold text-[#17161A]">Produits internationaux</h2>
+          </div>
+          {produitsInternationaux.length === 0 ? (
+            <p className="text-sm text-[#17161A]/50 px-4">
+              Aucun produit international pour le moment.
+            </p>
+          ) : (
+            <div className="flex gap-4 overflow-x-auto px-4 pb-2">
+              {produitsInternationaux.map((p) => (
+                <Link
+                  key={p.id}
+                  href={`/produit/${p.id}`}
+                  className="flex-shrink-0 w-36 border border-[#EEE8DD] rounded-2xl overflow-hidden bg-white block"
+                >
+                  <div className="bg-[#EEE8DD] h-24 flex items-center justify-center relative">
+                    {p.images?.[0] && (
+                      <Image src={p.images[0]} alt={p.name} fill className="object-cover" />
+                    )}
+                  </div>
+                  <div className="p-2">
+                    <p className="text-xs font-semibold truncate">{p.name}</p>
+                    <p className="text-[#FF6E14] text-sm font-bold">{p.price.toLocaleString("fr-FR")} FCFA</p>
+                    <span className="inline-block mt-1 bg-[#0E6B57]/10 text-[#0E6B57] text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      📍 {p.country}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Nos Produits */}
       <main className="px-4 pb-10">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-lg font-bold text-[#17161A]">Nos Produits</h1>
-          <span className="flex items-center gap-1 bg-[#0E6B57]/10 text-[#0E6B57] text-xs font-bold px-3 py-1 rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#0E6B57]"></span> En direct
-          </span>
+          <h1 className="text-lg font-bold text-[#17161A]">
+            {rechercheNormalisee ? `Résultats pour "${recherche}"` : "Nos Produits"}
+          </h1>
+          {!rechercheNormalisee && (
+            <span className="flex items-center gap-1 bg-[#0E6B57]/10 text-[#0E6B57] text-xs font-bold px-3 py-1 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#0E6B57]"></span> En direct
+            </span>
+          )}
         </div>
 
-        {produits.length === 0 ? (
+        {produitsFiltres.length === 0 ? (
           <p className="text-sm text-[#17161A]/60 text-center mt-6">
-            Aucun produit publié pour le moment.
+            {rechercheNormalisee
+              ? "Aucun produit ne correspond à votre recherche."
+              : "Aucun produit publié pour le moment."}
           </p>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {produits.map((produit) => (
+            {produitsFiltres.map((produit) => (
               <Link
                 key={produit.id}
                 href={`/produit/${produit.id}`}

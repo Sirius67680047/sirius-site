@@ -19,6 +19,9 @@ export const metadata: Metadata = {
   verification: {
     google: "Q8qei1kXI9DMnxZWeHzE5nOij58ee3ylHub-j4yqthk",
   },
+  other: {
+    "color-scheme": "light",
+  },
 };
 
 export default function RootLayout({
@@ -30,6 +33,7 @@ export default function RootLayout({
     <html
       lang="fr"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      style={{ colorScheme: "light" }}
     >
       <body className="min-h-full flex flex-col">
         {children}
