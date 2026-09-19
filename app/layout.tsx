@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import BottomNav from "../components/BottomNav";
@@ -19,9 +19,10 @@ export const metadata: Metadata = {
   verification: {
     google: "Q8qei1kXI9DMnxZWeHzE5nOij58ee3ylHub-j4yqthk",
   },
-  other: {
-    "color-scheme": "light",
-  },
+};
+
+export const viewport: Viewport = {
+  colorScheme: "light",
 };
 
 export default function RootLayout({
